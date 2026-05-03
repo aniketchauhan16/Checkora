@@ -291,6 +291,21 @@
             box-shadow: 0 4px 16px rgba(240, 192, 64, 0.25);
         }
         .btn-gold:active { transform: translateY(0); }
+        .btn-copy-moves {
+            background: linear-gradient(135deg, #f0c040, #d4a020);
+            color: #1a1a2e;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-copy-moves:hover {
+            background: linear-gradient(135deg, #f5cc55, #e0b030);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(240, 192, 64, 0.2);
+        }
+        .btn-copy-moves:active { transform: translateY(0); }
 
         /* ============================================================
            Responsive
@@ -515,7 +530,10 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-title">Move History</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="card-title">Move History</div>
+                    <button id="copyMovesBtn" class="btn-copy-moves" style="width: auto; padding: 4px 10px; font-size: 0.75rem;">Copy</button>
+                </div>
                 <div class="moves-list" id="movesList">
                     <span class="placeholder">No moves yet</span>
                 </div>
@@ -995,7 +1013,9 @@
             }
         }
 
+        let moveHistory = [];
         function updateMoves(history) {
+            moveHistory = history;
             if (!history?.length) {
                 movesEl.innerHTML = '<span class="placeholder">No moves yet</span>';
                 return;
@@ -1010,6 +1030,32 @@
                     ${history[i+1]?`<span class="move-black">${history[i+1].notation}</span>`:''}
                 `;
                 movesEl.appendChild(row);
+            }
+        }
+
+        function copyMovesToClipboard() {
+            if (!moveHistory || moveHistory.length === 0) {
+                showStatus('No moves to copy', true);
+                return;
+            }
+            let movesText = '';
+            for (let i = 0; i < moveHistory.length; i += 2) {
+                const moveNum = i / 2 + 1;
+                const whitMove = moveHistory[i]?.notation || '';
+                const blackMove = moveHistory[i + 1]?.notation || '';
+                movesText += `${moveNum}. ${whitMove}`;
+                if (blackMove) movesText += ` ${blackMove}`;
+                movesText += ' ';
+            }
+            try {
+                if (!navigator.clipboard) throw new Error('Clipboard API not available');
+                navigator.clipboard.writeText(movesText.trim()).then(() => {
+                    showStatus('Moves copied!', false);
+                }).catch(() => {
+                    showStatus('Unable to copy moves', true);
+                });
+            } catch (err) {
+                showStatus('Unable to copy moves', true);
             }
         }
 
@@ -1101,6 +1147,9 @@
         }
 
         pauseBtn.onclick = () => paused ? resumeGame() : pauseGame();
+        if (document.getElementById('copyMovesBtn')) {
+            document.getElementById('copyMovesBtn').onclick = copyMovesToClipboard;
+        }
 
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) pauseGame();
